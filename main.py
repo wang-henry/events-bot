@@ -87,7 +87,7 @@ async def on_message(message):
             try:
                 date = datetime.date(int(year), int(month), int(day))
             except ValueError:
-                await message.channel.send("Indavlid Date")
+                await message.channel.send("Invalid Date")
                 return
         else:
             await message.channel.send("Invalid Date (Date not integers)")
