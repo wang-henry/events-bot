@@ -114,5 +114,5 @@ dmypy.json
 .pyre/
 
 .idea/
-
+data/
 token.txt
