@@ -14,6 +14,11 @@ client = discord.Client()
 async def on_ready():
     print("Discord bot is ready!")
 
+    # Initialize cmd_chars.json if it is not present
+    if not os.path.exists('data/cmd_chars.json'):
+        with open('data/cmd_chars.json', 'w') as cmd_chars_init:
+            json.dump({}, cmd_chars_init)
+
 
 @client.event
 async def on_message(message):
@@ -23,6 +28,15 @@ async def on_message(message):
 
     # Gets the server id
     server_id = message.guild.id
+
+    # Check if server_id is in cmd_chars
+    with open('data/cmd_chars.json', 'r') as cmd_chars:
+        chars = json.load(cmd_chars)
+
+    if server_id not in chars:
+        cmd_char = '!'
+    else:
+        cmd_char = chars[server_id]
 
     # Check if JSON is already present
     if os.path.exists(f'data/events/{server_id}.json'):
@@ -39,10 +53,10 @@ async def on_message(message):
 
     # Add event command
     # !add event <yyyy> <mm> <dd> <Event name>
-    if message.content.startswith('!add event '):
+    if message.content.startswith(f'{cmd_char}events add'):
         msg = message.content[11:].split(' ')
         if len(msg) < 4:
-            await message.channel.send("Invalid Input LEN")
+            await message.channel.send("Invalid Input Length")
             return
 
         year, month, day = msg[0], msg[1], msg[2]
@@ -51,10 +65,10 @@ async def on_message(message):
             try:
                 date = datetime.date(int(year), int(month), int(day))
             except ValueError:
-                await message.channel.send("Indavlid Date")
+                await message.channel.send("Invalid Date")
                 return
         else:
-            await message.channel.send("Invalid Date (Date not integers)")
+            await message.channel.send("Invalid Date Input")
             return
 
         # Generate event name
@@ -83,7 +97,7 @@ async def on_message(message):
         await message.channel.send(f"Added event '{event}' for {date}")
 
     # List all events
-    if message.content.startswith('!list events'):
+    if message.content.startswith(f'{cmd_char}events list'):
         if len(date_lst) == 0:
             await message.channel.send("No Upcoming Events")
             return
@@ -99,7 +113,7 @@ async def on_message(message):
 
     # Delete an event
     # !remove event <yyyy> <mm> <dd> <num>
-    if message.content.startswith('!remove event'):
+    if message.content.startswith(f'{cmd_char}events remove'):
         msg = message.content[14:].split(' ')
         if len(msg) != 4:
             await message.channel.send("Invalid Input (Format)")
@@ -140,6 +154,14 @@ async def on_message(message):
                 return
         else:
             await message.channel.send("Date not found")
+
+    if message.content.startswith(f'{cmd_char}events clear'):
+        os.remove(f'data/events/{server_id}.json')
+        os.remove(f'data/dates/{server_id}.json')
+        await message.channel.send("Removed all events!")
+
+    if message.content.startswith('!events set cmd'):
+        pass
 
     if message.content.startswith('!help'):
         await message.channel.send(
