@@ -122,8 +122,10 @@ async def on_message(message):
         if date in events:
             if 1 <= int(num) <= len(events[date]):
                 event = events[date].pop(int(num) - 1)
-                del events[date]
-                date_lst.remove(date)
+
+                if len(events[date]) == 0:
+                    del events[date]
+                    date_lst.remove(date)
 
                 # Write both objects to JSON files per server
                 with open(f'data/events/{server_id}.json', 'w') as events_file:
