@@ -1,3 +1,4 @@
+#!usr/bin/env python3
 import discord
 import datetime
 import json
@@ -174,4 +175,5 @@ async def on_message(message):
         )
 
 
-client.run(TOKEN)
+if __name__ == '__main__':
+    client.run(TOKEN)
