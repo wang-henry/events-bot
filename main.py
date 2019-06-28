@@ -25,11 +25,11 @@ async def on_message(message):
     server_id = message.guild.id
 
     # Check if JSON is already present
-    if os.path.exists('data/events/{}.json'.format(server_id)):
-        with open('data/events/{}.json'.format(server_id), 'r') as e_data:
+    if os.path.exists(f'data/events/{server_id}.json'):
+        with open(f'data/events/{server_id}.json', 'r') as e_data:
             events = json.load(e_data)
 
-        with open('data/dates/{}.json'.format(server_id), 'r') as d_data:
+        with open(f'data/dates/{server_id}.json', 'r') as d_data:
             date_lst = json.load(d_data)
 
     # Generate new JSON (Generation occurs below)
@@ -73,14 +73,14 @@ async def on_message(message):
             date_lst.append(date)
 
         # Write both objects to JSON files per server
-        with open('data/events/{}.json'.format(server_id), 'w') as events_file:
+        with open(f'data/events/{server_id}.json', 'w') as events_file:
             json.dump(events, events_file)
 
-        with open('data/dates/{}.json'.format(server_id), 'w') as dates_file:
+        with open(f'data/dates/{server_id}.json', 'w') as dates_file:
             json.dump(date_lst, dates_file)
 
         # Confirmation that event was added
-        await message.channel.send("Added event '{}' for {}".format(event, date))
+        await message.channel.send(f"Added event '{event}' for {date}")
 
     # List all events
     if message.content.startswith('!list events'):
@@ -126,13 +126,13 @@ async def on_message(message):
                 date_lst.remove(date)
 
                 # Write both objects to JSON files per server
-                with open('data/events/{}.json'.format(server_id), 'w') as events_file:
+                with open(f'data/events/{server_id}.json', 'w') as events_file:
                     json.dump(events, events_file)
 
-                with open('data/dates/{}.json'.format(server_id), 'w') as dates_file:
+                with open(f'data/dates/{server_id}.json', 'w') as dates_file:
                     json.dump(date_lst, dates_file)
 
-                await message.channel.send("Successfully removed event '{}' on {}".format(event[2:], date))
+                await message.channel.send(f"Successfully removed event '{event[2:]}' on {date}")
             else:
                 await message.channel.send("Event not found")
                 return
@@ -141,7 +141,12 @@ async def on_message(message):
 
     if message.content.startswith('!help'):
         await message.channel.send(
-            "```List of all commands:\n!add event <yyyy> <mm> <dd> <event name> (Add an event)\n!remove event <yyyy> <mm> <dd> <index> (Remove an event)\n!list events (Lists all events)\n!help (Displays this message)```")
+            "```List of all commands:\n"
+            "!add event <yyyy> <mm> <dd> <event name> (Add an event)\n"
+            "!remove event <yyyy> <mm> <dd> <index> (Remove an event)\n"
+            "!list events (Lists all events)\n"
+            "!help (Displays this message)```"
+        )
 
 
 client.run(TOKEN)
