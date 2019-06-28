@@ -99,7 +99,7 @@ async def on_message(message):
     # List all events
     if message.content.startswith(f'{cmd_char}events list'):
         if len(date_lst) == 0:
-            await message.channel.send("No Upcoming Events")
+            await message.channel.send("```No Upcoming Events```")
             return
 
         date_lst.sort()
@@ -109,7 +109,7 @@ async def on_message(message):
             for e in events[d]:
                 s += e + '\n'
 
-        await message.channel.send("List of all events: \n" + s)
+        await message.channel.send("```List of all events: \n" + s + "```")
 
     # Delete an event
     # !remove event <yyyy> <mm> <dd> <num>
@@ -166,9 +166,9 @@ async def on_message(message):
     if message.content.startswith('!help'):
         await message.channel.send(
             "```List of all commands:\n"
-            "!add event <yyyy> <mm> <dd> <event name> (Add an event)\n"
-            "!remove event <yyyy> <mm> <dd> <index> (Remove an event)\n"
-            "!list events (Lists all events)\n"
+            "!events add <yyyy> <mm> <dd> <event name> (Add an event)\n"
+            "!events remove <yyyy> <mm> <dd> <index> (Remove an event)\n"
+            "!events list (Lists all events)\n"
             "!help (Displays this message)```"
         )
 
