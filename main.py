@@ -54,7 +54,7 @@ async def on_message(message):
     # Add event command
     # !add event <yyyy> <mm> <dd> <Event name>
     if message.content.startswith(f'{cmd_char}events add'):
-        msg = message.content[11:].split(' ')
+        msg = message.content[12:].split(' ')
         if len(msg) < 4:
             await message.channel.send("Invalid Input Length")
             return
@@ -109,12 +109,12 @@ async def on_message(message):
             for e in events[d]:
                 s += e + '\n'
 
-        await message.channel.send("```List of all events: \n" + s + "```")
+        await message.channel.send("```List of all Upcoming Events: \n" + s + "```")
 
     # Delete an event
     # !remove event <yyyy> <mm> <dd> <num>
     if message.content.startswith(f'{cmd_char}events remove'):
-        msg = message.content[14:].split(' ')
+        msg = message.content[15:].split(' ')
         if len(msg) != 4:
             await message.channel.send("Invalid Input (Format)")
             return
@@ -169,6 +169,7 @@ async def on_message(message):
             "!events add <yyyy> <mm> <dd> <event name> (Add an event)\n"
             "!events remove <yyyy> <mm> <dd> <index> (Remove an event)\n"
             "!events list (Lists all events)\n"
+            "!events clear (Removes all events)\n"
             "!help (Displays this message)```"
         )
 
