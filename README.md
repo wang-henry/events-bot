@@ -1,1 +1,1 @@
-# events-bot
+# event-bot
