@@ -1,5 +1,6 @@
 #!usr/bin/env python3
 import discord
+from discord.ext import commands
 import datetime
 import json
 import os
@@ -7,11 +8,10 @@ import os
 f = open("token.txt", "r")
 TOKEN = f.readline()
 
-client = discord.Client()
+bot = commands.Bot(command_prefix='!')
 
 
-# Startup messages
-@client.event
+@bot.event
 async def on_ready():
     print("Discord bot is ready!")
 
@@ -21,23 +21,129 @@ async def on_ready():
             json.dump({}, cmd_chars_init)
 
 
-@client.event
-async def on_message(message):
-    # Prevent bot from detecting its own messages
-    if message.author == client.user:
+@bot.command()
+async def add(ctx, year_in, month_in, day_in, event_name):
+    valid_year = True
+    valid_month = True
+    valid_day = True
+
+    error_msg = "Invalid"
+
+    # Error checking
+    if len(year_in) != 4 or not year_in.isnumeric():
+        valid_year = False
+        error_msg = error_msg + " year"
+
+    if len(month_in) != 2 or not month_in.isnumeric():
+        valid_month = False
+        error_msg = error_msg + " month"
+
+    if len(day_in) != 2 or not day_in.isnumeric():
+        valid_day = False
+        error_msg = error_msg + " day"
+
+    # Error detected send error message and exit
+    if valid_year is False or valid_month is False or valid_day is False:
+        await ctx.message.channel.send(error_msg)
         return
 
-    # Gets the server id
-    server_id = message.guild.id
+    # Set values
+    year = int(year_in)
+    month = int(month_in)
+    day = int(day_in)
 
-    # Check if server_id is in cmd_chars
-    with open('data/cmd_chars.json', 'r') as cmd_chars:
-        chars = json.load(cmd_chars)
+    # Obtain server ID
+    server_id = ctx.guild.id
 
-    if server_id not in chars:
-        cmd_char = '!'
+    date_lst = []
+    # Check if JSON is already present
+    if os.path.exists(f'data/events/{server_id}.json'):
+        with open(f'data/events/{server_id}.json', 'r') as e_data:
+            events = json.load(e_data)
+
+        with open(f'data/dates/{server_id}.json', 'r') as d_data:
+            temp = json.load(d_data)
+
+        # Convert to datetime objects
+        for date_str_item in temp:
+            temp_year = int(date_str_item[0:4])
+            temp_month = int(date_str_item[5:7])
+            temp_day = int(date_str_item[8:])
+            date_lst.append(datetime.date(temp_year, temp_month, temp_day))
+
+    # Generate new JSON (Generation occurs below)
     else:
-        cmd_char = chars[server_id]
+        events = {}
+
+    # Create Date object
+    try:
+        date = datetime.date(int(year), int(month), int(day))
+    except:
+        await ctx.message.channel.send("Invalid Date")
+        return
+
+    date_str = str(date)
+
+    # Check if in dictionary
+    if date in events:
+        events[date_str].append(event_name)
+    else:
+        events[date_str] = [event_name]
+
+        # Add to date_lst and sort
+        date_lst.append(date)
+        date_lst.sort()
+
+    # Write both objects to JSON files per server
+    with open(f'data/events/{server_id}.json', 'w') as events_file:
+        json.dump(events, events_file)
+
+    # Convert date objects in sorted date list to str
+    date_lst_str = []
+    for date_item in date_lst:
+        date_lst_str = str(date_item)
+
+    with open(f'data/dates/{server_id}.json', 'w') as dates_file:
+        json.dump(date_lst_str, dates_file)
+
+    # Confirmation that event was added
+    await ctx.channel.send(f"Added event '{event_name}' for {date_str}")
+
+
+@bot.command()
+async def remove(ctx, year_in, month_in, day_in, index_in):
+    valid_year = True
+    valid_month = True
+    valid_day = True
+
+    error_msg = "Invalid"
+
+    # Error checking
+    if len(year_in) != 4 or not year_in.isnumeric():
+        valid_year = False
+        error_msg = error_msg + " year"
+
+    if len(month_in) != 2 or not month_in.isnumeric():
+        valid_month = False
+        error_msg = error_msg + " month"
+
+    if len(day_in) != 2 or not day_in.isnumeric():
+        valid_day = False
+        error_msg = error_msg + " day"
+
+    # Error detected send error message and exit
+    if valid_year is False or valid_month is False or valid_day is False:
+        await ctx.message.channel.send(error_msg)
+        return
+
+    # Set values
+    year = int(year_in)
+    month = int(month_in)
+    day = int(day_in)
+    index = int(index_in)
+
+    # Obtain server ID
+    server_id = ctx.guild.id
 
     # Check if JSON is already present
     if os.path.exists(f'data/events/{server_id}.json'):
@@ -52,71 +158,29 @@ async def on_message(message):
         events = {}
         date_lst = []
 
-    # Add event command
-    # !add event <yyyy> <mm> <dd> <Event name>
-    if message.content.startswith(f'{cmd_char}events add'):
-        await add_event(message, events, server_id, date_lst)
-
-    # List all events
-    if message.content.startswith(f'{cmd_char}events list'):
-        await list_events(message, events, date_lst)
-
-    # Delete an event
-    # !remove event <yyyy> <mm> <dd> <num>
-    if message.content.startswith(f'{cmd_char}events remove'):
-        await delete_event(message, events, server_id, date_lst)
-
-    if message.content.startswith(f'{cmd_char}events clear'):
-        os.remove(f'data/events/{server_id}.json')
-        os.remove(f'data/dates/{server_id}.json')
-        await message.channel.send("Removed all events!")
-
-    if message.content.startswith('!events set cmd'):
-        pass
-
-    if message.content.startswith('!help'):
-        await message.channel.send(
-            "```List of all commands:\n"
-            "!events add <yyyy> <mm> <dd> <event name> (Add an event)\n"
-            "!events remove <yyyy> <mm> <dd> <index> (Remove an event)\n"
-            "!events list (Lists all events)\n"
-            "!events clear (Removes all events)\n"
-            "!help (Displays this message)```"
-        )
-
-
-async def add_event(message, events, server_id, date_lst):
-    msg = message.content[12:].split(' ')
-    if len(msg) < 4:
-        await message.channel.send("Invalid Input Length")
+    # Create Date object
+    try:
+        date = datetime.date(int(year), int(month), int(day))
+    except:
+        await ctx.message.channel.send("Invalid Date")
         return
 
-    year, month, day = msg[0], msg[1], msg[2]
+    date_str = str(date)
 
-    if year.isnumeric() and month.isnumeric() and day.isnumeric():
-        try:
-            date = datetime.date(int(year), int(month), int(day))
-        except ValueError:
-            await message.channel.send("Invalid Date")
-            return
-    else:
-        await message.channel.send("Invalid Date Input")
-        return
+    if date_str not in events:
+        await ctx.message.channel.send("Event not found")
 
-    # Generate event name
-    event = ''
-    for char in msg[3:]:
-        event += char + ' '
+    if index > len(events[date_str]) or index < 1:
+        await ctx.message.channel.send("Invalid index")
 
-    # Convert to string to input into JSON
-    date = str(date)
+    # Remove
+    removed_event = events[date_str][index - 1]
+    del events[date_str][index - 1]
 
-    # Add events to dict
-    if date in events:
-        events[date].append(str(len(events[date]) + 1) + ") " + event)
-    else:
-        events[date] = ["1) " + event.strip()]
-        date_lst.append(date)
+    # No more events at given date, remove date from date_lst and events
+    if len(events[date_str]) == 0:
+        date_lst.remove(date_str)
+        del events[date_str]
 
     # Write both objects to JSON files per server
     with open(f'data/events/{server_id}.json', 'w') as events_file:
@@ -125,67 +189,79 @@ async def add_event(message, events, server_id, date_lst):
     with open(f'data/dates/{server_id}.json', 'w') as dates_file:
         json.dump(date_lst, dates_file)
 
-    # Confirmation that event was added
-    await message.channel.send(f"Added event '{event}' for {date}")
+    await ctx.message.channel.send(f"Successfully removed {removed_event} on {date_str}")
 
 
-async def list_events(message, events, date_lst):
-    if len(date_lst) == 0:
-        await message.channel.send("```No Upcoming Events```")
-        return
+@bot.command()
+async def list(ctx):
+    # Obtain server ID
+    server_id = ctx.guild.id
 
-    date_lst.sort()
-    s = ''
-    for d in date_lst:
-        s += str(d) + '\n'
-        for e in events[d]:
-            s += e + '\n'
+    # Check if JSON is already present
+    if os.path.exists(f'data/events/{server_id}.json'):
+        with open(f'data/events/{server_id}.json', 'r') as e_data:
+            events = json.load(e_data)
 
-    await message.channel.send("```List of all Upcoming Events: \n" + s + "```")
+        with open(f'data/dates/{server_id}.json', 'r') as d_data:
+            date_lst = json.load(d_data)
 
-
-async def delete_event(message, events, server_id, date_lst):
-    msg = message.content[15:].split(' ')
-    if len(msg) != 4:
-        await message.channel.send("Invalid Input (Format)")
-        return
-
-    year, month, day, num = msg[0], msg[1], msg[2], msg[3]
-
-    # Verify all integers
-    if year.isnumeric() and month.isnumeric() and day.isnumeric() and num.isnumeric():
-        try:
-            date = datetime.date(int(year), int(month), int(day))
-        except ValueError:
-            await message.channel.send("Invalid Date")
-            return
+    # Generate new JSON (Generation occurs below)
     else:
-        await message.channel.send("Invalid Date (Date not integers)")
+        events = {}
+        date_lst = []
+
+    embed = discord.Embed(title="Events", description="List of upcoming events:", color=0xeee657)
+
+    for date in date_lst:
+        event_display = ''
+        count = 1
+        for event in events[date]:
+            event_display = event_display + str(count) + ") " + event + "\n"
+            count += 1
+        embed.add_field(name=date, value=event_display, inline=False)
+
+    await ctx.send(embed=embed)
+
+
+@bot.command()
+async def clear(ctx):
+    # Obtain server ID
+    server_id = ctx.guild.id
+
+    # Check if JSON is already present
+    if os.path.exists(f'data/events/{server_id}.json'):
+        with open(f'data/events/{server_id}.json', 'r') as e_data:
+            events = json.load(e_data)
+
+        with open(f'data/dates/{server_id}.json', 'r') as d_data:
+            date_lst = json.load(d_data)
+    else:
+        await ctx.message.channel.send("No Events to clear")
         return
 
-    date = str(date)
-    if date in events:
-        if 1 <= int(num) <= len(events[date]):
-            event = events[date].pop(int(num) - 1)
+    # Write both objects to JSON files per server
+    with open(f'data/events/{server_id}.json', 'w') as events_file:
+        json.dump({}, events_file)
 
-            if len(events[date]) == 0:
-                del events[date]
-                date_lst.remove(date)
+    with open(f'data/dates/{server_id}.json', 'w') as dates_file:
+        json.dump([], dates_file)
 
-            # Write both objects to JSON files per server
-            with open(f'data/events/{server_id}.json', 'w') as events_file:
-                json.dump(events, events_file)
 
-            with open(f'data/dates/{server_id}.json', 'w') as dates_file:
-                json.dump(date_lst, dates_file)
+# Remove default help command
+bot.remove_command('help')
 
-            await message.channel.send(f"Successfully removed event '{event[2:]}' on {date}")
-        else:
-            await message.channel.send("Event not found")
-            return
-    else:
-        await message.channel.send("Date not found")
+
+@bot.command()
+async def help(ctx):
+    embed = discord.Embed(title="Events Bot", description="List of commands are:", color=0xeee657)
+
+    embed.add_field(name="!add <yyyy> <mm> <dd> <event name>", value="Add an event", inline=False)
+    embed.add_field(name="!remove <yyyy> <mm> <dd> <index>", value="Remove an event", inline=False)
+    embed.add_field(name="!list", value="Lists all events", inline=False)
+    embed.add_field(name="!clear", value="Removes all events", inline=False)
+
+    await ctx.send(embed=embed)
 
 
 if __name__ == '__main__':
-    client.run(TOKEN)
+    bot.run(TOKEN)
