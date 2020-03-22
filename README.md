@@ -1,4 +1,4 @@
-# events-bot
+# Events Bot
 Basic bot that keeps track of events, read the wiki for installation and commands as well as upcoming features.
 
 ## Add Bot to your server
