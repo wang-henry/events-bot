@@ -213,7 +213,7 @@ async def list(ctx):
         for event in events[date]:
             event_display = event_display + str(count) + ") " + event + "\n"
             count += 1
-            embed.add_field(name=date, value=event_display, inline=False)
+        embed.add_field(name=date, value=event_display, inline=False)
 
     await ctx.send(embed=embed)
 
