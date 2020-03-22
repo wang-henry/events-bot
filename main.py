@@ -15,11 +15,6 @@ bot = commands.Bot(command_prefix='!')
 async def on_ready():
     print("Discord bot is ready!")
 
-    # Initialize cmd_chars.json if it is not present
-    if not os.path.exists('data/cmd_chars.json'):
-        with open('data/cmd_chars.json', 'w') as cmd_chars_init:
-            json.dump({}, cmd_chars_init)
-
 
 @bot.command()
 async def add(ctx, year_in, month_in, day_in, event_name):
@@ -62,7 +57,7 @@ async def add(ctx, year_in, month_in, day_in, event_name):
             events = json.load(e_data)
 
         with open(f'data/dates/{server_id}.json', 'r') as d_data:
-            temp = json.load(d_data)
+            temp = json.load(d_data)["dates"]
 
         # Convert to datetime objects
         for date_str_item in temp:
@@ -85,7 +80,7 @@ async def add(ctx, year_in, month_in, day_in, event_name):
     date_str = str(date)
 
     # Check if in dictionary
-    if date in events:
+    if date_str in events:
         events[date_str].append(event_name)
     else:
         events[date_str] = [event_name]
@@ -101,10 +96,10 @@ async def add(ctx, year_in, month_in, day_in, event_name):
     # Convert date objects in sorted date list to str
     date_lst_str = []
     for date_item in date_lst:
-        date_lst_str = str(date_item)
+        date_lst_str.append(str(date_item))
 
     with open(f'data/dates/{server_id}.json', 'w') as dates_file:
-        json.dump(date_lst_str, dates_file)
+        json.dump({"dates": date_lst_str}, dates_file)
 
     # Confirmation that event was added
     await ctx.channel.send(f"Added event '{event_name}' for {date_str}")
@@ -151,7 +146,7 @@ async def remove(ctx, year_in, month_in, day_in, index_in):
             events = json.load(e_data)
 
         with open(f'data/dates/{server_id}.json', 'r') as d_data:
-            date_lst = json.load(d_data)
+            date_lst = json.load(d_data)["dates"]
 
     # Generate new JSON (Generation occurs below)
     else:
@@ -187,7 +182,7 @@ async def remove(ctx, year_in, month_in, day_in, index_in):
         json.dump(events, events_file)
 
     with open(f'data/dates/{server_id}.json', 'w') as dates_file:
-        json.dump(date_lst, dates_file)
+        json.dump({"dates": [date_lst]}, dates_file)
 
     await ctx.message.channel.send(f"Successfully removed {removed_event} on {date_str}")
 
@@ -203,7 +198,7 @@ async def list(ctx):
             events = json.load(e_data)
 
         with open(f'data/dates/{server_id}.json', 'r') as d_data:
-            date_lst = json.load(d_data)
+            date_lst = json.load(d_data)["dates"]
 
     # Generate new JSON (Generation occurs below)
     else:
@@ -218,7 +213,7 @@ async def list(ctx):
         for event in events[date]:
             event_display = event_display + str(count) + ") " + event + "\n"
             count += 1
-        embed.add_field(name=date, value=event_display, inline=False)
+            embed.add_field(name=date, value=event_display, inline=False)
 
     await ctx.send(embed=embed)
 
@@ -234,7 +229,7 @@ async def clear(ctx):
             events = json.load(e_data)
 
         with open(f'data/dates/{server_id}.json', 'r') as d_data:
-            date_lst = json.load(d_data)
+            date_lst = json.load(d_data)["dates"]
     else:
         await ctx.message.channel.send("No Events to clear")
         return
@@ -244,7 +239,7 @@ async def clear(ctx):
         json.dump({}, events_file)
 
     with open(f'data/dates/{server_id}.json', 'w') as dates_file:
-        json.dump([], dates_file)
+        json.dump({"dates": []}, dates_file)
 
 
 # Remove default help command
