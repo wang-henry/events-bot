@@ -1,4 +1,4 @@
-# Events Bot
+# Events Bot ![](https://github.com/wang-henry/wang-henry.github.io/blob/master/projects/events_bot/icon_small.png)
 Basic bot that keeps track of events. The bot is currently running on Python 3.8.0.
 
 ## Add Bot to your server
